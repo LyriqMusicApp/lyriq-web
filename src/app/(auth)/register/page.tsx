@@ -16,8 +16,7 @@ const schema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirm_password: z.string(),
-  school_name: z.string().min(2, 'Please enter your school name'),
-  school_type: z.enum(['primary', 'secondary', 'sen', 'home', 'other']),
+  school_code: z.string().min(3, 'Please enter your school code'),
   country: z.string(),
 }).refine(d => d.password === d.confirm_password, {
   message: "Passwords don't match",
@@ -25,14 +24,6 @@ const schema = z.object({
 })
 
 type FormData = z.infer<typeof schema>
-
-const schoolTypeOptions = [
-  { value: 'primary', label: 'Primary School' },
-  { value: 'sen', label: 'SEN Setting' },
-  { value: 'secondary', label: 'Secondary School' },
-  { value: 'home', label: 'Home Education' },
-  { value: 'other', label: 'Other' },
-] as const
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
@@ -58,14 +49,14 @@ export default function RegisterPage() {
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { country: 'GB', school_type: 'primary' },
+    defaultValues: { country: 'GB' },
   })
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true)
     try {
       const { confirm_password: _, ...payload } = data
-      const res = await registerUser(payload)
+      const res = await registerUser({ ...payload, school_code: payload.school_code.toUpperCase() })
       setAuth(res.access_token, res.refresh_token, res.user)
       document.cookie = 'lyriq-authed=1; path=/; max-age=2592000'
       router.push('/create')
@@ -80,7 +71,7 @@ export default function RegisterPage() {
     <div className="w-full max-w-md">
       <div className="rounded-2xl p-8" style={{ background: '#FFFFFF', border: '1px solid #E4E7EC', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
         <h1 className="text-2xl font-bold mb-1" style={{ color: '#101828' }}>Create your account</h1>
-        <p className="text-sm mb-8" style={{ color: '#475467' }}>Join thousands of teachers using Lyriq</p>
+        <p className="text-sm mb-8" style={{ color: '#475467' }}>Enter your school code to get started</p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <Field label="Your name" error={errors.display_name?.message}>
@@ -99,20 +90,15 @@ export default function RegisterPage() {
             <input {...register('confirm_password')} type="password" autoComplete="new-password" className={inputClass} style={inputStyle(!!errors.confirm_password)} placeholder="••••••••" />
           </Field>
 
-          <Field label="School name" error={errors.school_name?.message}>
-            <input {...register('school_name')} className={inputClass} style={inputStyle(!!errors.school_name)} placeholder="Springfield Primary School" />
-          </Field>
-
-          <Field label="School type" error={errors.school_type?.message}>
-            <select
-              {...register('school_type')}
+          <Field label="School code" error={errors.school_code?.message}>
+            <input
+              {...register('school_code')}
               className={inputClass}
-              style={{ ...inputStyle(!!errors.school_type), cursor: 'pointer' }}
-            >
-              {schoolTypeOptions.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+              style={inputStyle(!!errors.school_code)}
+              placeholder="e.g. STJOHNS-2024"
+              autoCapitalize="characters"
+            />
+            <p className="text-xs mt-1" style={{ color: '#98A2B3' }}>Ask your school administrator for your code</p>
           </Field>
 
           <button

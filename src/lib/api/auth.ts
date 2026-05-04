@@ -12,8 +12,7 @@ export async function register(data: {
   email: string
   password: string
   display_name: string
-  school_name: string
-  school_type: 'sen' | 'primary' | 'secondary' | 'home' | 'other'
+  school_code: string
   country: string
 }): Promise<AuthResponse> {
   return apiRequest<AuthResponse>('/api/v1/auth/register', {
